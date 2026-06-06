@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Products are readable by anyone
+    match /products/{productId} {
+      allow read: if true;
+      // Writes allowed only to authenticated users listed in /admins/{uid}
+      allow create, update, delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admins collection: existence denotes admin; only server-side admin SDK should write
+    match /admins/{adminId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+  }
+}

@@ -1,0 +1,23 @@
+# Vercel
+.vercel
+
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment variables — NEVER commit .env
+.env
+.env.local
+.env.production
+
+# Firebase service account key — NEVER commit
+serviceAccountKey.json
+
+# Build outputs
+dist/
+client/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
