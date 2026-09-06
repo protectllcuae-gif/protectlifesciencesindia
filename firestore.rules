@@ -2,11 +2,35 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Products are readable by anyone
+    // Products: public read, admin-only write
     match /products/{productId} {
       allow read: if true;
-      // Writes allowed only to authenticated users listed in /admins/{uid}
       allow create, update, delete: if request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Metadata: public read (used for cache invalidation), admin-only write
+    match /metadata/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Orders: only the owning user can read/write their own orders
+    match /orders/{orderId} {
+      allow read, write: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+      // Admins can read all orders
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Users: each user can read/write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Admins can read all user profiles
+      allow read: if request.auth != null &&
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
@@ -18,3 +42,4 @@ service cloud.firestore {
 
   }
 }
+
