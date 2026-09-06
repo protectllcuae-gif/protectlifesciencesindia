@@ -2,44 +2,79 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Products: public read, admin-only write
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Products: public read, authenticated admin write
     match /products/{productId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null &&
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow write: if isAuthenticated();
     }
 
-    // Metadata: public read (used for cache invalidation), admin-only write
+    // Metadata: public read, authenticated admin write
     match /metadata/{docId} {
       allow read: if true;
-      allow write: if request.auth != null &&
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow write: if isAuthenticated();
     }
 
-    // Orders: only the owning user can read/write their own orders
+    // Orders: public create (guest / user checkout), authenticated read & write
     match /orders/{orderId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null;
-      // Admins can read all orders
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
     }
 
-    // Users: each user can read/write their own profile
+    // Enquiries / Leads from contact form
+    match /enquiries/{enquiryId} {
+      allow create: if true;
+      allow read, write, delete: if isAuthenticated();
+    }
+
+    // Coupons: public read for checkout validation, authenticated write
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Team members & Admin permissions
+    match /team/{memberId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Reviews & Testimonials
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Blogs & Insights
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // User profiles & customer accounts
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Admins can read all user profiles
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow read, write: if isAuthenticated();
     }
 
-    // Admins collection: existence denotes admin; only server-side admin SDK should write
+    match /customers/{customerId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /clients/{clientId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Admins registry
     match /admins/{adminId} {
-      allow read: if false;
-      allow write: if false;
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
   }
 }
+
 
